@@ -7,6 +7,11 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Galaxy Love</title>
+    <!-- Preload รูปภาพ popup ทั้งหมด เพื่อให้โหลดล่วงหน้าก่อนผู้ใช้กดดู -->
+    <link rel="preload" as="image" href="1.jpeg">
+    <link rel="preload" as="image" href="2.jpeg">
+    <link rel="preload" as="image" href="3.jpeg">
+    <link rel="preload" as="image" href="4.jpeg">
    
     <style>
         
@@ -1179,6 +1184,16 @@
 
         generateBlackHole(); generateGalaxy(); generateJet(); generateBgStars(); generateHyperspace();
 
+        // ── Preload รูปภาพทั้งหมดล่วงหน้า เพื่อให้ browser แคชไว้ก่อน popup เปิด ──
+        (function preloadImages() {
+            plates.forEach(p => {
+                const src = p.popupSrc || p.src;
+                if (!src || /\.(mp4|webm|ogg|gif)$/i.test(src)) return;
+                const img = new Image();
+                img.src = src;
+            });
+        })();
+
         // ── Frases flotantes ──
         const textGroup = new THREE.Group();
         scene.add(textGroup);
@@ -2125,7 +2140,7 @@
                 
                 // ตรวจสอบว่าถ้ามีตัวแปร popupSrc (รูป 1-4 ของเรา) ให้เอามาแสดงในป๊อปอัป
                 if (plate.popupSrc) {
-                    const src = plate.popupSrc + '?v=' + Date.now();
+                    const src = plate.popupSrc; // ไม่ใส่ ?v=Date.now() เพื่อให้ browser cache ได้
                     const isVideo = /\.(mp4|webm|ogg)$/i.test(plate.popupSrc);
                     if (isVideo) {
                         msgImg.style.display = 'none';
@@ -2138,8 +2153,20 @@
                         msgVideo.pause();
                         msgVideo.src = '';
                         msgImg.style.display = '';
-                        msgImg.src = src;
-                        msgImgBg.src = src;
+                        // ซ่อนรูปก่อน แล้วค่อยแสดงหลังโหลดเสร็จ เพื่อไม่ให้ค้างที่รูปเก่า
+                        msgImg.style.opacity = '0';
+                        msgImgBg.style.opacity = '0';
+                        const newSrc = src;
+                        msgImg.onload = () => {
+                            msgImg.style.transition = 'opacity 0.3s ease';
+                            msgImg.style.opacity = '1';
+                        };
+                        msgImgBg.onload = () => {
+                            msgImgBg.style.transition = 'opacity 0.3s ease';
+                            msgImgBg.style.opacity = '1';
+                        };
+                        msgImg.src = newSrc;
+                        msgImgBg.src = newSrc;
                     }
                 } else if (plate.src) {
                     msgImg.src = plate.src; msgImgBg.src = plate.src;
